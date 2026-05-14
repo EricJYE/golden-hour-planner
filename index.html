@@ -247,11 +247,38 @@
 
   function hilite(items){items.forEach((el,i)=>el.classList.toggle("focused",i===focusedIdx));if(items[focusedIdx])items[focusedIdx].scrollIntoView({block:"nearest"})}
 
+  // Common Chinese city name translations
+  const ZH_TO_EN = {
+    "纽约":"New York","洛杉矶":"Los Angeles","旧金山":"San Francisco","芝加哥":"Chicago",
+    "休斯顿":"Houston","西雅图":"Seattle","波士顿":"Boston","迈阿密":"Miami",
+    "拉斯维加斯":"Las Vegas","华盛顿":"Washington","奥兰多":"Orlando","亚特兰大":"Atlanta",
+    "伦敦":"London","巴黎":"Paris","柏林":"Berlin","罗马":"Rome","马德里":"Madrid",
+    "阿姆斯特丹":"Amsterdam","维也纳":"Vienna","布拉格":"Prague","苏黎世":"Zurich",
+    "东京":"Tokyo","大阪":"Osaka","京都":"Kyoto","首尔":"Seoul","新加坡":"Singapore",
+    "曼谷":"Bangkok","吉隆坡":"Kuala Lumpur","雅加达":"Jakarta","马尼拉":"Manila",
+    "悉尼":"Sydney","墨尔本":"Melbourne","奥克兰":"Auckland",
+    "迪拜":"Dubai","开罗":"Cairo","约翰内斯堡":"Johannesburg","内罗毕":"Nairobi",
+    "圣保罗":"Sao Paulo","布宜诺斯艾利斯":"Buenos Aires","墨西哥城":"Mexico City",
+    "多伦多":"Toronto","温哥华":"Vancouver","蒙特利尔":"Montreal",
+    "莫斯科":"Moscow","伊斯坦布尔":"Istanbul","特拉维夫":"Tel Aviv",
+  };
+
+  function translateQuery(q) {
+    // exact match
+    if (ZH_TO_EN[q]) return ZH_TO_EN[q];
+    // partial match — replace any known Chinese city name found in query
+    for (const [zh, en] of Object.entries(ZH_TO_EN)) {
+      if (q.includes(zh)) return q.replace(zh, en);
+    }
+    return q;
+  }
+
   async function fetchSug(q){
+    const searchQ = translateQuery(q);
     acDrop.innerHTML='<div class="ac-msg">'+I18N[lang].searching+"</div>";
     acDrop.classList.add("open");focusedIdx=-1;
     try{
-      const res=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(q)+"&count=6&language="+(lang==="zh"?"zh":"en")+"&format=json");
+      const res=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(searchQ)+"&count=6&language="+(lang==="zh"?"zh":"en")+"&format=json");
       const data=await res.json();
       const results=data.results||[];
       if(!results.length){acDrop.innerHTML='<div class="ac-msg">'+I18N[lang].noResult+"</div>";return}
