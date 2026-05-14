@@ -278,7 +278,7 @@
     acDrop.innerHTML='<div class="ac-msg">'+I18N[lang].searching+"</div>";
     acDrop.classList.add("open");focusedIdx=-1;
     try{
-      const res=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(searchQ)+"&count=6&language="+(lang==="zh"?"zh":"en")+"&format=json");
+      const res=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(searchQ)+"&count=6&language="+(lang==="zh"?"zh_CN":"en")+"&format=json");
       const data=await res.json();
       const results=data.results||[];
       if(!results.length){acDrop.innerHTML='<div class="ac-msg">'+I18N[lang].noResult+"</div>";return}
