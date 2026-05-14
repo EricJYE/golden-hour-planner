@@ -86,14 +86,26 @@
 
   <script>
   const I18N={
-    zh:{subtitle:"拍摄时段规划工具",placeholder:"输入地点名称，如黄山、Lake Lanier…",search:"查询",loading:"正在查询位置…",hint:"悬停圆环标记查看详情 · 底部卡片显示完整时段信息",errLoc:"请输入并从列表中选择一个地点",errDate:"请选择日期",errNotFound:"找不到该地点，请换个关键词试试",errFail:"查询失败，请重试",searching:"搜索中…",noResult:"未找到结果",durFmt:m=>m<60?m+" 分钟":Math.floor(m/60)+"h "+m%60+"m",timeFmt:d=>d.toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit",hour12:false}),points:[{label:"天文晨光",desc:"天空开始微亮，适合星轨收尾"},{label:"蓝调（晨）",desc:"深蓝柔光，无阴影，最纯净天空"},{label:"黄金时段（晨）",desc:"暖橙侧光，长阴影，最佳拍摄窗口"},{label:"日出",desc:"太阳刚出地平线"},{label:"日落",desc:"太阳触碰地平线"},{label:"黄金时段（昏）",desc:"暖橙侧光，长阴影，最佳拍摄窗口"},{label:"蓝调（昏）",desc:"深蓝柔光，城市灯光刚亮起"},{label:"天文暮光",desc:"完全黑暗，适合星空摄影"}]},
-    en:{subtitle:"Photography Light Planner",placeholder:"Type a location, e.g. Lake Lanier, Yosemite…",search:"Search",loading:"Looking up location…",hint:"Hover markers on the ring for details · Full info in cards below",errLoc:"Please select a location from the list",errDate:"Please select a date",errNotFound:"Location not found — try a different keyword",errFail:"Query failed, please try again",searching:"Searching…",noResult:"No results found",durFmt:m=>m<60?m+" min":Math.floor(m/60)+"h "+m%60+"m",timeFmt:d=>d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),points:[{label:"Astro Dawn",desc:"Sky begins to lighten — great for star trail finales"},{label:"Blue Hour (AM)",desc:"Deep blue diffused light, no harsh shadows"},{label:"Golden Hour (AM)",desc:"Warm side light, long shadows — prime shooting window"},{label:"Sunrise",desc:"Sun reaches the horizon"},{label:"Sunset",desc:"Sun touches the horizon"},{label:"Golden Hour (PM)",desc:"Warm side light, long shadows — prime shooting window"},{label:"Blue Hour (PM)",desc:"Deep blue light, city lights just switching on"},{label:"Astro Dusk",desc:"Full darkness — ideal for astrophotography"}]}
+    zh:{subtitle:"拍摄时段规划工具",placeholder:"输入地点名称，如纽约、北京…",search:"查询",loading:"正在查询位置…",hint:"悬停圆环标记查看详情 · 底部卡片显示完整时段信息",errLoc:"请输入并从列表中选择一个地点",errDate:"请选择日期",errNotFound:"找不到该地点，请换个关键词试试",errFail:"查询失败，请重试",searching:"搜索中…",noResult:"未找到结果",durFmt:m=>m<60?m+" 分钟":Math.floor(m/60)+"h "+m%60+"m",timeFmt:d=>d.toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit",hour12:false}),points:[{label:"天文晨光",desc:"天空开始微亮，适合星轨收尾"},{label:"蓝调（晨）",desc:"深蓝柔光，无阴影，最纯净天空"},{label:"黄金时段（晨）",desc:"暖橙侧光，长阴影，最佳拍摄窗口"},{label:"日出",desc:"太阳刚出地平线"},{label:"日落",desc:"太阳触碰地平线"},{label:"黄金时段（昏）",desc:"暖橙侧光，长阴影，最佳拍摄窗口"},{label:"蓝调（昏）",desc:"深蓝柔光，城市灯光刚亮起"},{label:"天文暮光",desc:"完全黑暗，适合星空摄影"}]},
+    en:{subtitle:"Photography Light Planner",placeholder:"Type a location, e.g. New York, Beijing…",search:"Search",loading:"Looking up location…",hint:"Hover markers on the ring for details · Full info in cards below",errLoc:"Please select a location from the list",errDate:"Please select a date",errNotFound:"Location not found — try a different keyword",errFail:"Query failed, please try again",searching:"Searching…",noResult:"No results found",durFmt:m=>m<60?m+" min":Math.floor(m/60)+"h "+m%60+"m",timeFmt:d=>d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}),points:[{label:"Astro Dawn",desc:"Sky begins to lighten — great for star trail finales"},{label:"Blue Hour (AM)",desc:"Deep blue diffused light, no harsh shadows"},{label:"Golden Hour (AM)",desc:"Warm side light, long shadows — prime shooting window"},{label:"Sunrise",desc:"Sun reaches the horizon"},{label:"Sunset",desc:"Sun touches the horizon"},{label:"Golden Hour (PM)",desc:"Warm side light, long shadows — prime shooting window"},{label:"Blue Hour (PM)",desc:"Deep blue light, city lights just switching on"},{label:"Astro Dusk",desc:"Full darkness — ideal for astrophotography"}]}
   };
 
   let lang="zh",lastRenderData=null;
   function setLang(l){lang=l;document.getElementById("btn-zh").classList.toggle("active",l==="zh");document.getElementById("btn-en").classList.toggle("active",l==="en");applyStaticText();if(lastRenderData)buildCards(lastRenderData.T)}
   function applyStaticText(){const t=I18N[lang];document.getElementById("t-subtitle").textContent=t.subtitle;document.getElementById("location").placeholder=t.placeholder;document.getElementById("t-search").textContent=t.search;document.getElementById("t-hint").textContent=t.hint;document.getElementById("loading").textContent=t.loading}
-  function fmt(d){if(!d||isNaN(d))return"—";return I18N[lang].timeFmt(d)}
+  // timezone offset in minutes derived from longitude (15° = 1 hour)
+  let targetTzOffset = 0; // minutes from UTC, set when location is selected
+
+  function localDate(d){
+    // SunCalc returns JS Date objects (UTC internally)
+    // d.getTime() is ms since epoch (UTC)
+    // Just add target tz offset directly — no browser offset needed
+    return new Date(d.getTime() + targetTzOffset * 60000);
+  }
+  function fmt(d){
+    if(!d||isNaN(d))return"—";
+    return I18N[lang].timeFmt(localDate(d));
+  }
   function durMin(a,b){if(!a||!b||isNaN(a)||isNaN(b))return null;const m=Math.round((b-a)/60000);return m>0?I18N[lang].durFmt(m):null}
 
   // ── Autocomplete ──
@@ -138,6 +150,7 @@
         item.addEventListener("mousedown",e=>e.preventDefault());
         item.addEventListener("click",()=>{
           selectedGeo={lat:r.latitude,lon:r.longitude,display};
+          targetTzOffset=Math.round(r.longitude/15)*60; // rough solar tz offset in minutes
           locInput.value=display;
           closeDrop();
           runRender();
@@ -164,6 +177,7 @@
         if(!data.results?.length){showErr(I18N[lang].errNotFound);return}
         const r=data.results[0];
         selectedGeo={lat:r.latitude,lon:r.longitude,display:[r.name,r.admin1,r.country].filter(Boolean).join(", ")};
+        targetTzOffset=Math.round(r.longitude/15)*60;
         locInput.value=selectedGeo.display;
         runRender();
       })
@@ -185,14 +199,34 @@
 
   // ── Ring ──
   const cx=210,cy=210,OR=155,IR=95,MR=(OR+IR)/2,ns="http://www.w3.org/2000/svg";
-  const SEGS=[{from:"nightEnd",to:"nauticalDawn",color:"#12152e"},{from:"nauticalDawn",to:"goldenHourEnd",color:"#1e4d7b"},{from:"goldenHourEnd",to:"sunrise",color:"#c4620a"},{from:"sunrise",to:"goldenHour",color:"#ddd8c8"},{from:"goldenHour",to:"sunset",color:"#c4620a"},{from:"sunset",to:"nauticalDusk",color:"#7a2e10"},{from:"nauticalDusk",to:"night",color:"#1e4d7b"},{from:"night",to:"__midnight__",color:"#0a0c1a"}];
+  const SEGS=[
+    {from:"nightEnd",     to:"nauticalDawn",  color:"url(#gNight)"},
+    {from:"nauticalDawn", to:"goldenHourEnd", color:"url(#gBlueAM)"},
+    {from:"goldenHourEnd",to:"sunrise",       color:"url(#gGoldAM)"},
+    {from:"sunrise",      to:"goldenHour",    color:"url(#gDay)"},
+    {from:"goldenHour",   to:"sunset",        color:"url(#gGoldPM)"},
+    {from:"sunset",       to:"nauticalDusk",  color:"url(#gSunset)"},
+    {from:"nauticalDusk", to:"night",         color:"url(#gBluePM)"},
+    {from:"night",        to:"__midnight__",  color:"url(#gNight)"},
+  ];
   const PM=[{key:"nightEnd",emoji:"🌑",dotColor:"#4a5580",highlight:false},{key:"nauticalDawn",emoji:"🌫️",dotColor:"#7ec8e3",highlight:true},{key:"goldenHourEnd",emoji:"🌅",dotColor:"#f5c242",highlight:true},{key:"sunrise",emoji:"☀️",dotColor:"#f0a050",highlight:false},{key:"sunset",emoji:"🌇",dotColor:"#e07030",highlight:false},{key:"goldenHour",emoji:"🌆",dotColor:"#f5c242",highlight:true},{key:"nauticalDusk",emoji:"🌉",dotColor:"#7ec8e3",highlight:true},{key:"night",emoji:"🌃",dotColor:"#4a5580",highlight:false}];
   const pts=()=>PM.map((m,i)=>({...m,...I18N[lang].points[i]}));
 
   function svgEl(tag,attrs,parent){const e=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));if(parent)parent.appendChild(e);return e}
-  function tAngle(d){return(d.getHours()+d.getMinutes()/60)/24*360-90}
+  function tAngle(d){
+    if(!d||isNaN(d))return 0;
+    const local=localDate(d);
+    return(local.getHours()+local.getMinutes()/60)/24*360-90;
+  }
   function polar(a,r){const rad=a*Math.PI/180;return{x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)}}
-  function wedge(a0,a1,ro,ri){let a1a=a1<=a0?a1+360:a1;const lg=(a1a-a0)>180?1:0;const so=polar(a0,ro),eo=polar(a1a,ro),si=polar(a0,ri),ei=polar(a1a,ri);return"M"+so.x+","+so.y+" A"+ro+","+ro+" 0 "+lg+" 1 "+eo.x+","+eo.y+" L"+ei.x+","+ei.y+" A"+ri+","+ri+" 0 "+lg+" 0 "+si.x+","+si.y+" Z"}
+  function wedge(a0,a1,ro,ri){
+    let a1a=a1<=a0?a1+360:a1;
+    // clamp to max 360 degrees
+    if(a1a-a0>360)a1a=a0+360;
+    const lg=(a1a-a0)>180?1:0;
+    const so=polar(a0,ro),eo=polar(a1a,ro),si=polar(a0,ri),ei=polar(a1a,ri);
+    return"M"+so.x+","+so.y+" A"+ro+","+ro+" 0 "+lg+" 1 "+eo.x+","+eo.y+" L"+ei.x+","+ei.y+" A"+ri+","+ri+" 0 "+lg+" 0 "+si.x+","+si.y+" Z";
+  }
   function setActive(key){document.querySelectorAll(".card").forEach(c=>c.classList.toggle("active",c.dataset.key===key))}
 
   function render(lat,lon,displayName,dateVal){
@@ -201,6 +235,29 @@
     const nm=new Date(date);nm.setDate(nm.getDate()+1);nm.setHours(0,0,0,0);T.__midnight__=nm;
     lastRenderData={T,displayName,dateVal};
     const svg=document.getElementById("ring");svg.innerHTML="";
+    // inject gradient defs
+    const defs=document.createElementNS(ns,"defs");
+    const grads=[
+      {id:"gNight",   c1:"#07091a",c2:"#131729"},
+      {id:"gBlueAM",  c1:"#0d2a4a",c2:"#1a5a8a"},
+      {id:"gGoldAM",  c1:"#b84e00",c2:"#e8820a"},
+      {id:"gDay",     c1:"#d8d0bc",c2:"#ede8da"},
+      {id:"gGoldPM",  c1:"#b84e00",c2:"#e8820a"},
+      {id:"gSunset",  c1:"#6b1e08",c2:"#c04010"},
+      {id:"gBluePM",  c1:"#0d2a4a",c2:"#1a5a8a"},
+    ];
+    grads.forEach(g=>{
+      const grad=document.createElementNS(ns,"radialGradient");
+      grad.setAttribute("id",g.id);
+      grad.setAttribute("cx","50%");grad.setAttribute("cy","50%");
+      grad.setAttribute("r","50%");grad.setAttribute("gradientUnits","userSpaceOnUse");
+      grad.setAttribute("fx",cx);grad.setAttribute("fy",cy);
+      grad.setAttribute("r",OR);
+      const s1=document.createElementNS(ns,"stop");s1.setAttribute("offset","0%");s1.setAttribute("stop-color",g.c2);
+      const s2=document.createElementNS(ns,"stop");s2.setAttribute("offset","100%");s2.setAttribute("stop-color",g.c1);
+      grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);
+    });
+    svg.appendChild(defs);
     svgEl("circle",{cx,cy,r:OR+22,fill:"#181b24"},svg);
     svgEl("circle",{cx,cy,r:OR+22,fill:"none",stroke:"rgba(255,255,255,.08)","stroke-width":"0.5"},svg);
     SEGS.forEach(s=>{const t0=T[s.from],t1=T[s.to];if(!t0||isNaN(t0)||!t1||isNaN(t1))return;svgEl("path",{d:wedge(tAngle(t0),tAngle(t1),OR,IR),fill:s.color},svg)});
